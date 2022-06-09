@@ -594,12 +594,15 @@ void main() {
     final valueParam = method.parameters.last;
     expect(valueParam.name, equals('value'));
     expect(valueParam.typeIdentifier.baseType,
-        equals(BaseType.referenceTypeModifier));
+        equals(BaseType.pointerTypeModifier));
     expect(valueParam.typeIdentifier.typeArg, isNotNull);
-    expect(valueParam.typeIdentifier.typeArg!.baseType,
-        equals(BaseType.simpleArrayType));
+    expect(valueParam.typeIdentifier.typeArg?.baseType,
+        equals(BaseType.referenceTypeModifier));
     expect(valueParam.typeIdentifier.typeArg!.typeArg, isNotNull);
     expect(valueParam.typeIdentifier.typeArg!.typeArg!.baseType,
+        equals(BaseType.simpleArrayType));
+    expect(valueParam.typeIdentifier.typeArg!.typeArg!.typeArg, isNotNull);
+    expect(valueParam.typeIdentifier.typeArg!.typeArg!.typeArg!.baseType,
         equals(BaseType.uint8Type));
   });
 
