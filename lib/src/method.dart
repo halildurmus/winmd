@@ -334,7 +334,15 @@ class Method extends TokenObject
 
     parameters.insert(paramsIndex + 1, Parameter.fromVoid(scope, token));
     parameters[paramsIndex + 1].name = 'value';
-    parameters[paramsIndex + 1].typeIdentifier = typeTuple.typeIdentifier;
+
+    if (isReferenceType) {
+      parameters[paramsIndex + 1].typeIdentifier.baseType =
+          BaseType.pointerTypeModifier;
+      parameters[paramsIndex + 1].typeIdentifier.typeArg =
+          typeTuple.typeIdentifier;
+    } else {
+      parameters[paramsIndex + 1].typeIdentifier = typeTuple.typeIdentifier;
+    }
 
     return typeTuple.offsetLength;
   }
