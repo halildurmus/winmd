@@ -139,12 +139,110 @@ String convertTypeToProjection(
 }
 
 void main(List<String> args) {
-  listTokens();
-  listInterfaces();
-  listGUID();
-  listMethods();
-  listParameters();
-  listEnums();
+  // listTokens();
+  // listInterfaces();
+  // listGUID();
+  // listMethods();
+  // listParameters();
+  // listEnums();
 
-  print(convertTypeToProjection());
+  // print(convertTypeToProjection());
+
+  final jsonObject =
+      MetadataStore.getMetadataForType('Windows.Data.Json.JsonObject')!;
+
+  final map = jsonObject.interfaces.elementAt(2);
+  print(map.typeSpec?.name);
+
+  final iterable = jsonObject.interfaces.elementAt(3);
+  print(iterable.typeSpec?.name);
+
+  final basicProperties = MetadataStore.getMetadataForType(
+      'Windows.Storage.FileProperties.BasicProperties')!;
+
+  print(basicProperties
+      .findMethod('RetrievePropertiesAsync')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  print(basicProperties
+      .findMethod('RetrievePropertiesAsync')!
+      .returnType
+      .typeIdentifier
+      .typeArg
+      ?.name);
+
+  final connectionProfile = MetadataStore.getMetadataForType(
+      'Windows.Networking.Connectivity.ConnectionProfile')!;
+
+  print(connectionProfile
+      .findMethod('get_ServiceProviderGuid')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  final pedometer2 =
+      MetadataStore.getMetadataForType('Windows.Devices.Sensors.IPedometer2')!;
+
+  print(pedometer2
+      .findMethod('GetCurrentReadings')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  final calendarFactory = MetadataStore.getMetadataForType(
+      'Windows.Globalization.ICalendarFactory')!;
+
+  print(calendarFactory
+      .findMethod('CreateCalendarDefaultCalendarAndClock')!
+      .parameters
+      .first
+      .typeIdentifier
+      .name);
+
+  final storageItem =
+      MetadataStore.getMetadataForType('Windows.Storage.IStorageItem')!;
+
+  print(storageItem
+      .findMethod('GetBasicPropertiesAsync')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  final storageFileQueryResult2 = MetadataStore.getMetadataForType(
+      'Windows.Storage.Search.IStorageFileQueryResult2')!;
+
+  print(storageFileQueryResult2
+      .findMethod('GetMatchingPropertiesWithRanges')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  final ippAttributeValue = MetadataStore.getMetadataForType(
+      'Windows.Devices.Printers.IIppAttributeValue')!;
+
+  print(ippAttributeValue
+      .findMethod('GetCollectionArray')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  print(ippAttributeValue
+      .findMethod('GetDateTimeArray')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  print(ippAttributeValue
+      .findMethod('GetIntegerArray')!
+      .returnType
+      .typeIdentifier
+      .name);
+
+  print(ippAttributeValue
+      .findMethod('GetUriArray')!
+      .returnType
+      .typeIdentifier
+      .name);
 }

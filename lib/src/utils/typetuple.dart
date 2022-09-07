@@ -82,6 +82,7 @@ class TypeTuple {
           final newType = typeIdentifiers[idx].copyWith(typeArg: type);
           type = newType;
         }
+        type = type.copyWith(name: _parseTypeIdentifierName(type));
         return TypeTuple(type, dataLength);
 
       case BaseType.arrayTypeModifier:
@@ -140,5 +141,66 @@ class TypeTuple {
     } else {
       return 0;
     }
+  }
+}
+
+String _primitiveTypeNameFromBaseType(BaseType baseType) {
+  switch (baseType) {
+    case BaseType.booleanType:
+      return 'bool';
+    case BaseType.doubleType:
+    case BaseType.floatType:
+      return 'double';
+    case BaseType.int8Type:
+    case BaseType.int16Type:
+    case BaseType.int32Type:
+    case BaseType.int64Type:
+    case BaseType.uint8Type:
+    case BaseType.uint16Type:
+    case BaseType.uint32Type:
+    case BaseType.uint64Type:
+      return 'int';
+    case BaseType.stringType:
+      return 'String';
+    default:
+      return 'undefined';
+  }
+}
+
+/// Unpack a nested TypeIdentifier into a single name.
+String _parseGenericTypeIdentifierName(TypeIdentifier ti) {
+  final typeIdentifierName = ti.name;
+  final isTypeIdentifierNameParsed = typeIdentifierName.contains('<');
+  if (isTypeIdentifierNameParsed) return typeIdentifierName;
+
+  if (ti.type?.genericParams.length == 2) {
+    final isSecondArgMustBeNullable = [
+      'Windows.Foundation.Collections.IKeyValuePair`2',
+      'Windows.Foundation.Collections.IMap`2',
+      'Windows.Foundation.Collections.IMapView`2',
+      'Windows.Foundation.Collections.IObservableMap`2',
+    ].contains(ti.type?.name);
+    final firstArg = _parseTypeIdentifierName(ti.typeArg!);
+    final secondArg = _parseTypeIdentifierName(ti.typeArg!.typeArg!);
+    final questionMark = isSecondArgMustBeNullable ? '?' : '';
+    return '$typeIdentifierName<$firstArg, $secondArg$questionMark>';
+  }
+
+  return '$typeIdentifierName<${_parseTypeIdentifierName(ti.typeArg!)}>';
+}
+
+String _parseTypeIdentifierName(TypeIdentifier ti) {
+  switch (ti.baseType) {
+    case BaseType.classTypeModifier:
+    case BaseType.valueTypeModifier:
+      return ti.name;
+    case BaseType.genericTypeModifier:
+      return _parseGenericTypeIdentifierName(ti);
+    case BaseType.objectType:
+      return 'Object';
+    case BaseType.referenceTypeModifier:
+      return _parseTypeIdentifierName(ti.typeArg!);
+    default:
+      return _primitiveTypeNameFromBaseType(ti.baseType);
   }
 }
