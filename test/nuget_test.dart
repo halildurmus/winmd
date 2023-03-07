@@ -61,7 +61,27 @@ void main() {
     }
   });
 
-  tearDown(() {
-    Directory(NuGet.tempDirectory).deleteSync();
+  test('Can find mdmerge', () {
+    final path = MdMerge.getExecutablePath();
+    check(path)
+      ..isNotEmpty()
+      ..endsWith('mdmerge.exe');
+  });
+
+  test('Can load metadata from NuGet', () async {
+    const win32pkg = 'Microsoft.Windows.SDK.Win32Metadata';
+    final latestVersion =
+        await NuGet.getLatestVersion(win32pkg, includePreviewVersions: true);
+    final win32PackagePath = await NuGet.unpackPackage(win32pkg, latestVersion);
+    final win32Metadata = File('$win32PackagePath\\Windows.Win32.winmd');
+    check(win32Metadata.existsSync()).isTrue();
+    final scope = MetadataStore.getScopeForFile(win32Metadata);
+    final typeDef =
+        scope.findTypeDef('Windows.Win32.UI.WindowsAndMessaging.Apis');
+    check(typeDef).isNotNull();
+  });
+
+  tearDownAll(() async {
+    MetadataStore.close();
   });
 }
