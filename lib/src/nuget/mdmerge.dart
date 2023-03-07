@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:win32_registry/win32_registry.dart';
 
+import '../utils/exception.dart';
+
 class MdMerge {
   static String getExecutablePath() {
     const path = r'SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\Windows\v10.0';
@@ -11,7 +13,7 @@ class MdMerge {
     regKey.close();
 
     if (installationFolder == null || productVersion == null) {
-      throw Exception(
+      throw WinmdException(
           'Failed to get information of the installed Windows SDK.');
     }
 

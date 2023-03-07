@@ -7,6 +7,8 @@ import 'package:ffi/ffi.dart';
 import 'package:http/http.dart' as http;
 import 'package:win32/win32.dart';
 
+import '../utils/exception.dart';
+
 /// Utilities for working with nuget.org, Microsoft's package manager.
 class NuGet {
   static const authority = 'api.nuget.org';
@@ -22,7 +24,7 @@ class NuGet {
     final response = await http.get(uri);
     final decodedResponse = jsonDecode(response.body);
     if (decodedResponse['versions'] == null) {
-      throw Exception('Failed to get the versions of $packageName.');
+      throw WinmdException('Failed to get the versions of $packageName.');
     }
 
     final versions = decodedResponse['versions'] as List;
@@ -60,7 +62,7 @@ class NuGet {
     try {
       final retValue = GetTempPath(MAX_PATH, pTempDir);
       if (retValue == 0 || retValue > MAX_PATH) {
-        throw Exception('Failed to retrieve a valid temporary directory.');
+        throw WinmdException('Failed to retrieve a valid temporary directory.');
       }
 
       final path =

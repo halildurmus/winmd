@@ -101,31 +101,6 @@ class MetadataStore {
     return cache['Windows.Win32.Interop.dll']!;
   }
 
-  // /// Loads a scope for a file asset that is embedded in the package.
-  // static Scope getScopeForAsset(String assetName) {
-  //   if (cache.containsKey(assetName)) {
-  //     return cache[assetName]!;
-  //   } else {
-  //     final uri = Uri.parse('package:winmd/assets/$assetName');
-  //     final future = Isolate.resolvePackageUri(uri);
-
-  //     // waitFor is strongly discouraged in general, but it is accepted as the
-  //     // only reasonable way to load package assets outside of Flutter.
-  //     final package = waitFor(future, timeout: const Duration(seconds: 5));
-  //     if (package != null) {
-  //       final fileScope = File.fromUri(package);
-  //       return getScopeForFile(fileScope);
-  //     } else {
-  //       // Last ditch attempt: look in local folder
-  //       final fileScope = File(assetName);
-  //       if (fileScope.existsSync()) {
-  //         return getScopeForFile(fileScope);
-  //       }
-  //     }
-  //   }
-  //   throw WinmdException('Could not find $assetName.');
-  // }
-
   /// Takes a metadata file path and returns the matching scope.
   static Scope getScopeForFile(File fileScope) {
     if (!isInitialized) _initialize();
