@@ -24,6 +24,16 @@ import 'type_aliases.dart';
 import 'typedef.dart';
 import 'utils/exception.dart';
 
+enum MetadataType {
+  win32('Microsoft.Windows.SDK.Win32Metadata'),
+  winrt('Microsoft.Windows.SDK.Contracts');
+
+  /// The name of the package on `nuget.org`.
+  final String packageName;
+
+  const MetadataType(this.packageName);
+}
+
 /// Caches a reader for each file scope.
 ///
 /// Use this to obtain a reference of a scope without creating unnecessary
