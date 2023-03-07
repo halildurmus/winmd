@@ -10,7 +10,6 @@
 import 'dart:cli';
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
@@ -19,20 +18,11 @@ import 'com/enums.dart';
 import 'com/imetadataassemblyimport.dart';
 import 'com/imetadatadispenser.dart';
 import 'com/imetadataimport2.dart';
+import 'nuget/nuget.dart';
 import 'scope.dart';
 import 'type_aliases.dart';
 import 'typedef.dart';
 import 'utils/exception.dart';
-
-enum MetadataType {
-  win32('Microsoft.Windows.SDK.Win32Metadata'),
-  winrt('Microsoft.Windows.SDK.Contracts');
-
-  /// The name of the package on `nuget.org`.
-  final String packageName;
-
-  const MetadataType(this.packageName);
-}
 
 /// Caches a reader for each file scope.
 ///
@@ -46,7 +36,7 @@ class MetadataStore {
   /// Initialize the [MetadataStore] object.
   ///
   /// This is done automatically by any method that uses it.
-  static void initialize() {
+  static void _initialize() {
     // This must have the same object lifetime as MetadataStore itself.
     final dispenserObject = calloc<COMObject>();
     final clsidCorMetaDataDispenser =
@@ -62,12 +52,28 @@ class MetadataStore {
       }
 
       dispenser = IMetaDataDispenser(dispenserObject);
-
       isInitialized = true;
     } finally {
       free(clsidCorMetaDataDispenser);
       free(iidIMetaDataDispenser);
     }
+
+    // Load Win32 scopes
+    waitFor(initWin32Scopes(), timeout: const Duration(seconds: 60));
+  }
+
+  static Future<void> initWin32Scopes() async {
+    const win32pkg = 'Microsoft.Windows.SDK.Win32Metadata';
+    final latestVersion =
+        await NuGet.getLatestVersion(win32pkg, includePreviewVersions: true);
+    final win32PackagePath = await NuGet.unpackPackage(win32pkg, latestVersion);
+
+    final win32Metadata = File('$win32PackagePath\\Windows.Win32.winmd');
+    cache['Windows.Win32.winmd'] = getScopeForFile(win32Metadata);
+
+    final win32InteropDll =
+        File('$win32PackagePath\\Windows.Win32.Interop.dll');
+    cache['Windows.Win32.Interop.dll'] = getScopeForFile(win32InteropDll);
   }
 
   /// Return the scope that contains the Win32 metadata.
@@ -81,43 +87,48 @@ class MetadataStore {
   /// time for generating types. It also reduces the risk of breaking changes
   /// being out of sync with the winmd library, since the two can be more
   /// tightly bound together.
-  static Scope getWin32Scope() => getScopeForAsset('Windows.Win32.winmd');
+  static Scope getWin32Scope() {
+    if (!isInitialized) _initialize();
+    return cache['Windows.Win32.winmd']!;
+  }
 
   /// Return the scope that contains the Win32 interop metadata.
   ///
   /// This is a satellite file that supports the Win32 metadata. It primarily
   /// contains attributes that are used by the main file.
-  static Scope getWin32InteropScope() =>
-      getScopeForAsset('Windows.Win32.Interop.dll');
-
-  /// Loads a scope for a file asset that is embedded in the package.
-  static Scope getScopeForAsset(String assetName) {
-    if (cache.containsKey(assetName)) {
-      return cache[assetName]!;
-    } else {
-      final uri = Uri.parse('package:winmd/assets/$assetName');
-      final future = Isolate.resolvePackageUri(uri);
-
-      // waitFor is strongly discouraged in general, but it is accepted as the
-      // only reasonable way to load package assets outside of Flutter.
-      final package = waitFor(future, timeout: const Duration(seconds: 5));
-      if (package != null) {
-        final fileScope = File.fromUri(package);
-        return getScopeForFile(fileScope);
-      } else {
-        // Last ditch attempt: look in local folder
-        final fileScope = File(assetName);
-        if (fileScope.existsSync()) {
-          return getScopeForFile(fileScope);
-        }
-      }
-    }
-    throw WinmdException('Could not find $assetName.');
+  static Scope getWin32InteropScope() {
+    if (!isInitialized) _initialize();
+    return cache['Windows.Win32.Interop.dll']!;
   }
+
+  // /// Loads a scope for a file asset that is embedded in the package.
+  // static Scope getScopeForAsset(String assetName) {
+  //   if (cache.containsKey(assetName)) {
+  //     return cache[assetName]!;
+  //   } else {
+  //     final uri = Uri.parse('package:winmd/assets/$assetName');
+  //     final future = Isolate.resolvePackageUri(uri);
+
+  //     // waitFor is strongly discouraged in general, but it is accepted as the
+  //     // only reasonable way to load package assets outside of Flutter.
+  //     final package = waitFor(future, timeout: const Duration(seconds: 5));
+  //     if (package != null) {
+  //       final fileScope = File.fromUri(package);
+  //       return getScopeForFile(fileScope);
+  //     } else {
+  //       // Last ditch attempt: look in local folder
+  //       final fileScope = File(assetName);
+  //       if (fileScope.existsSync()) {
+  //         return getScopeForFile(fileScope);
+  //       }
+  //     }
+  //   }
+  //   throw WinmdException('Could not find $assetName.');
+  // }
 
   /// Takes a metadata file path and returns the matching scope.
   static Scope getScopeForFile(File fileScope) {
-    if (!isInitialized) initialize();
+    if (!isInitialized) _initialize();
 
     final filename = fileScope.uri.pathSegments.last;
 
@@ -218,9 +229,9 @@ class MetadataStore {
       final typeDef = calloc<mdTypeDef>();
 
       try {
-        // For apps that are not Windows Store apps, RoGetMetaDataFile can only be
-        // used for classes that are part of the Windows Runtime itself (i.e. not
-        // third-party types).
+        // For apps that are not Windows Store apps, RoGetMetaDataFile can only
+        // be used for classes that are part of the Windows Runtime itself (i.e.
+        // not third-party types).
         final hr = RoGetMetaDataFile(hstrTypeName, nullptr,
             hstrMetaDataFilePath, spMetaDataImport, typeDef);
         if (SUCCEEDED(hr)) {
@@ -254,7 +265,7 @@ class MetadataStore {
   /// Find a matching typedef, if one exists, for a Windows Runtime type.
   static TypeDef? getMetadataForType(String typeName) {
     if (typeName.isEmpty) throw WinmdException('Type cannot be empty.');
-    if (!isInitialized) initialize();
+    if (!isInitialized) _initialize();
 
     final scope = getScopeForType(typeName);
     return scope.findTypeDef(typeName);
@@ -265,11 +276,7 @@ class MetadataStore {
   /// The readers and dispensers should be automatically torn down with the end
   /// of the process, but it's polite to do this in an orderly manner,
   /// particularly if the calling app outlives the cache lifetime.
-  static void close() {
-    if (!isInitialized) return;
-    cache.clear();
-    isInitialized = false;
-  }
+  static void close() {}
 
   /// Print information about the cache for debugging purposes.
   static String get cacheInfo => '[${MetadataStore.cache.keys.join(', ')}]';

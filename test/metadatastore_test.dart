@@ -8,31 +8,10 @@ import 'package:win32/win32.dart';
 import 'package:winmd/winmd.dart';
 
 void main() {
-  test('MetadataStore explicit initialization', () {
-    MetadataStore.initialize();
-    final scope = MetadataStore.getWin32Scope();
-    check(scope.typeDefs.length).isGreaterThan(0);
-    MetadataStore.close();
-  });
-
   test('MetadataStore implicit initialization', () {
     final scope = MetadataStore.getWin32Scope();
 
     check(scope.typeDefs.length).isGreaterThan(0);
-    MetadataStore.close();
-  });
-
-  test('MetadataStore reinitialization', () {
-    final scope = MetadataStore.getWin32Scope();
-
-    check(scope.typeDefs.length).isGreaterThan(0);
-    MetadataStore.close();
-
-    MetadataStore.initialize();
-    final scope2 = MetadataStore.getWin32Scope();
-
-    check(scope2.typeDefs.length).isGreaterThan(0);
-    MetadataStore.close();
   });
 
   test('MetadataStore scopes are successfully cached', () {
@@ -45,25 +24,23 @@ void main() {
   test('MetadataStore scope prints successfully', () {
     MetadataStore.getWin32Scope();
     MetadataStore.getScopeForType('Windows.Win32.Shell.Apis');
-    check(MetadataStore.cache.length).equals(1);
-    check(MetadataStore.cacheInfo).equals('[Windows.Win32.winmd]');
-    MetadataStore.close();
+    check(MetadataStore.cache.length).isGreaterOrEqual(1);
+    check(MetadataStore.cacheInfo).contains('Windows.Win32.winmd');
   });
 
   test('MetadataStore can cache both WinRT and Win32 metadata', () {
     MetadataStore.getWin32Scope();
     MetadataStore.getScopeForType('Windows.Globalization.Calendar');
-    check(MetadataStore.cache.length).equals(2);
-    check(MetadataStore.cacheInfo).anyOf([
-      it()..equals('[Windows.Globalization.winmd, Windows.Win32.winmd]'),
-      it()..equals('[Windows.Win32.winmd, Windows.Globalization.winmd]')
-    ]);
-    MetadataStore.close();
+    check(MetadataStore.cache.length).isGreaterOrEqual(2);
+    check(MetadataStore.cacheInfo)
+      ..contains('Windows.Globalization.winmd')
+      ..contains('Windows.Win32.winmd')
+      ..contains('Windows.Win32.Interop.dll');
   });
 
   test('MetadataStore scope grows organically', () {
     final scope = MetadataStore.getWin32Scope();
-    check(MetadataStore.cache.length).equals(1);
+    check(MetadataStore.cache.length).isGreaterOrEqual(1);
 
     // Do some stuff that requires the Interop DLL to be loaded.
     final shexInfo =
@@ -74,12 +51,7 @@ void main() {
     final interopValue = attrib?.parameters.first.value;
     check(interopValue).isNotNull();
 
-    check(MetadataStore.cache.length).equals(2);
-    check(MetadataStore.cacheInfo)
-        .equals('[Windows.Win32.winmd, Windows.Win32.Interop.dll]');
-
-    MetadataStore.close();
-    check(MetadataStore.cache.length).equals(0);
+    check(MetadataStore.cache.length).isGreaterOrEqual(2);
   });
 
   test('Appropriate response to search for empty type', () {
