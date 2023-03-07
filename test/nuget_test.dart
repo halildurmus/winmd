@@ -57,7 +57,13 @@ void main() {
       check(dir.listSync().length).isGreaterOrEqual(4);
       check(File('$path\\LICENSE.TXT').existsSync()).isTrue();
     } finally {
-      dir.deleteSync(recursive: true);
+      // Temporarily remove the deletion of the temp directory. On GHA:
+      //   PathAccessException: Deletion failed, path =
+      //   'C:\Users\RUNNER~1\AppData\Local\Temp\winmd_a9eb232a\Microsoft.Win32.Registry'
+      //   (OS Error: The process cannot access the file because it is being
+      //   used by another process.
+
+      // dir.deleteSync(recursive: true);
     }
   });
 
