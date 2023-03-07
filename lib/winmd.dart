@@ -65,6 +65,8 @@ export 'src/mixins/customattributes_mixin.dart';
 export 'src/mixins/genericparams_mixin.dart';
 export 'src/mixins/supportedarchitectures_mixin.dart';
 export 'src/moduleref.dart';
+export 'src/nuget/mdmerge.dart';
+export 'src/nuget/nuget.dart';
 export 'src/parameter.dart';
 export 'src/pekind.dart';
 export 'src/pinvokemap.dart';
