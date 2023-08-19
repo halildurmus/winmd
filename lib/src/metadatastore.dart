@@ -2,12 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// waitFor is controversial, but necessary in the absence of a better mechanism
-// for non-Flutter packages to load binary assets.
-//
-// ignore_for_file: deprecated_member_use
-
-import 'dart:cli';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
@@ -71,28 +65,19 @@ class MetadataStore {
 
   /// Loads a scope for a file asset that is embedded in the package.
   static Scope getScopeForAsset(String assetName) {
-    if (cache.containsKey(assetName)) {
-      return cache[assetName]!;
+    if (cache.containsKey(assetName)) return cache[assetName]!;
+
+    final uri = Uri.parse('package:winmd/assets/$assetName');
+    final package = Isolate.resolvePackageUriSync(uri);
+    if (package != null) {
+      final fileScope = File.fromUri(package);
+      return getScopeForFile(fileScope);
     } else {
-      final uri = Uri.parse('package:winmd/assets/$assetName');
-
-      // ignore: discarded_futures
-      final future = Isolate.resolvePackageUri(uri);
-      // waitFor is strongly discouraged in general, but it is accepted as the
-      // only reasonable way to load package assets outside of Flutter.
-      final package = waitFor(future, timeout: const Duration(seconds: 5));
-
-      if (package != null) {
-        final fileScope = File.fromUri(package);
-        return getScopeForFile(fileScope);
-      } else {
-        // Last ditch attempt: look in local folder
-        final fileScope = File(assetName);
-        if (fileScope.existsSync()) {
-          return getScopeForFile(fileScope);
-        }
-      }
+      // Last ditch attempt: look in local folder
+      final fileScope = File(assetName);
+      if (fileScope.existsSync()) return getScopeForFile(fileScope);
     }
+
     throw WinmdException('Could not find $assetName.');
   }
 
