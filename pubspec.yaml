@@ -21,7 +21,7 @@ dependencies:
   nuget: ^0.1.1
   path: ^1.9.0
   win32: ^5.5.4
-  win32_registry: ^1.1.5
+  win32_registry: ">=1.1.5 <3.0.0"
 
 dev_dependencies:
   checks: ^0.3.0
