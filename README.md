@@ -1,3 +1,9 @@
+# This package has moved
+
+The package can now be found at <https://github.com/halildurmus/win32/tree/main/packages/winmd>.
+
+---
+
 [![ci][ci_badge]][ci_link]
 [![Package: winmd][package_badge]][package_link]
 [![Publisher: halildurmus.dev][publisher_badge]][publisher_link]
